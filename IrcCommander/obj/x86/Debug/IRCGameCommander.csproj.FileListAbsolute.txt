@@ -1,0 +1,11 @@
+C:\Documents and Settings\Blanca\mis documentos\visual studio 2010\Projects\IrcCommander\IrcCommander\bin\Debug\vJoyInterface.dll
+C:\Documents and Settings\Blanca\mis documentos\visual studio 2010\Projects\IrcCommander\IrcCommander\bin\Debug\IRCGameCommander.exe
+C:\Documents and Settings\Blanca\mis documentos\visual studio 2010\Projects\IrcCommander\IrcCommander\bin\Debug\IRCGameCommander.pdb
+C:\Documents and Settings\Blanca\mis documentos\visual studio 2010\Projects\IrcCommander\IrcCommander\bin\Debug\vJoyInterfaceWrap.dll
+C:\Documents and Settings\Blanca\mis documentos\visual studio 2010\Projects\IrcCommander\IrcCommander\obj\x86\Debug\ResolveAssemblyReference.cache
+C:\Documents and Settings\Blanca\mis documentos\visual studio 2010\Projects\IrcCommander\IrcCommander\obj\x86\Debug\WindowsFormsApplication1.Form1.resources
+C:\Documents and Settings\Blanca\mis documentos\visual studio 2010\Projects\IrcCommander\IrcCommander\obj\x86\Debug\WindowsFormsApplication1.Properties.Resources.resources
+C:\Documents and Settings\Blanca\mis documentos\visual studio 2010\Projects\IrcCommander\IrcCommander\obj\x86\Debug\GenerateResource.read.1.tlog
+C:\Documents and Settings\Blanca\mis documentos\visual studio 2010\Projects\IrcCommander\IrcCommander\obj\x86\Debug\GenerateResource.write.1.tlog
+C:\Documents and Settings\Blanca\mis documentos\visual studio 2010\Projects\IrcCommander\IrcCommander\obj\x86\Debug\IRCGameCommander.exe
+C:\Documents and Settings\Blanca\mis documentos\visual studio 2010\Projects\IrcCommander\IrcCommander\obj\x86\Debug\IRCGameCommander.pdb
