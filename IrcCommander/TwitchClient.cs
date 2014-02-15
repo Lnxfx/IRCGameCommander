@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Diagnostics;
+using System.Threading;
 using System.Text.RegularExpressions;
 using vJoyInterfaceWrap;
 
@@ -41,20 +42,23 @@ namespace WindowsFormsApplication1
         private byte[] nick;
         private byte[] pass;
         private string[] buttons;
+        private string[] directions;
         private Dictionary<string, uint> dictionary;
         static private vJoy joystick;
-        static private vJoy.JoystickState iReport;
         static public uint device = 1;
 
         public TwitchClient() 
         {
-            int index = 0;
-            dictionary = new Dictionary<string, uint>();
-            twitchsock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            int index = 1;
+            twitchsock = null;
+            dictionary = new Dictionary<string, uint>(); 
             buttons = new string[] {"up", "down", "left", "right", "select", "start", "a", "b", "x", "y", "l", "r", "r2", "l2", "r3", "l3", "home"};
+            directions = new string[] { "up", "down", "left", "right" };
             foreach (string item in buttons)
                 dictionary.Add(item, (uint)index++);
+            Console.WriteLine("IRCGameCommander by LNXFX - 2014");
             initJoystick();
+            Console.WriteLine("If you don't see the chat it's most likely that the channel, username or pass-code are wrong, restart and try again.");
         }
 
         public bool connect(string server, int port, string channel, string user, string pass)
@@ -64,30 +68,59 @@ namespace WindowsFormsApplication1
             this.user = Encoding.Default.GetBytes("USER " + user + "\r\n");
             this.channel = Encoding.Default.GetBytes("JOIN " + channel + "\r\n");
             IPEndPoint dir = new IPEndPoint(IPAddress.Parse(server), port);
+            twitchsock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
             try
             {
                 twitchsock.Connect(dir);
-                twitchsock.Send(this.pass, 0, this.pass.Length,0);
-                twitchsock.Send(this.nick, 0, this.nick.Length, 0);
-                twitchsock.Send(this.user, 0, this.user.Length, 0);
-                twitchsock.Send(this.channel, 0, this.channel.Length, 0);
+                if (twitchsock.Connected)
+                {
+                    twitchsock.Send(this.pass, 0, this.pass.Length, 0);
+                    twitchsock.Send(this.nick, 0, this.nick.Length, 0);
+                    twitchsock.Send(this.user, 0, this.user.Length, 0);
+                    twitchsock.Send(this.channel, 0, this.channel.Length, 0);
+                }
 
             }
             catch(Exception e) 
             {
                 Console.WriteLine("Can't connect with irc Server: {0} ", e.ToString());
+                return false;
             }
             return true;
+        }
+
+        public void disconnect()
+        {
+            byte[] quitmsg = Encoding.Default.GetBytes("QUIT\r\n");
+            try
+            {
+                if (twitchsock.Connected)
+                    twitchsock.Send(quitmsg, 0, quitmsg.Length, 0);
+                if (twitchsock != null)
+                {
+                    twitchsock.Shutdown(SocketShutdown.Both);
+                    twitchsock.Disconnect(true);
+                }
+            }
+            catch (Exception e) 
+            {
+                Console.WriteLine("Error Disconnecting from server: {0}", e.ToString());
+            }
         }
 
         public string readComment() 
         {
             Match match = null;
+            Match number = null;
             string msg;
             string com;
+            string ctimes = "";
+            int repeat = 1;
             byte[] buffer = new byte[2040];
             string[] command = new string[2];
-            twitchsock.Receive(buffer);
+            string[] comtimes;
+            if (twitchsock.Connected)
+                twitchsock.Receive(buffer);
             msg = Encoding.UTF8.GetString(buffer);
             if (msg.Contains("PING"))
             {
@@ -101,19 +134,50 @@ namespace WindowsFormsApplication1
                     Console.WriteLine("Error PINGING server {0}", e.ToString());
                 }
             }
-            match = Regex.Match(msg, @":(?<name>\w+)![a-zA-Z0-9_]*@[a-zA-Z0-9_]*.[a-zA-Z0-9_]*.[a-zA-Z0-9_]* [a-zA-Z0-9_]* #[a-zA-Z0-9_]* :");
+            match = Regex.Match(msg, @":(?<name>\w+)![a-zA-Z0-9_]*@[a-zA-Z0-9_]*.[a-zA-Z0-9_]*.[a-zA-Z0-9_]* [a-zA-Z0-9_]* #[a-zA-Z0-9_]* :(\w+\s)*");
             if (match.Success)
             {
-                com = msg.Split(':')[2];
+                com = match.ToString().Split(':')[2];
                 com = com.Trim().ToLower();
+                comtimes = com.Split(' ');
+                if (comtimes.Length > 1)
+                {
+                    com = comtimes[0];
+                    foreach(string word in directions)
+                    {
+                        if(com.Equals(word))
+                        {
+                            number = Regex.Match(comtimes[1],@"[0-9]+");
+                            if (number.Success)
+                            {
+                                ctimes = number.ToString();
+                                repeat = Convert.ToInt32(ctimes);
+                            }
+                            if (repeat > 20 || repeat < 2)
+                            {
+                                repeat = 1;
+                                ctimes = "";
+                            }
+                            System.Diagnostics.Debug.WriteLine(repeat.ToString());
+                            break;
+                        }
+                    }
+                }
+
                 foreach(string word in buttons)
                 {
                     if(com.Equals(word))
                     {
-                        Console.WriteLine(match.Groups["name"].Value + ": " + com);
-                        for (uint i = 0; i < buttons.Length; i++)
-                            joystick.SetBtn(false, device, i);
-                        joystick.SetBtn(true, device, dictionary[com]);
+                        Console.WriteLine(match.Groups["name"].Value + ": " + com + " " + ctimes);
+                        for (int t = 0; t < repeat; t++)
+                        {                           
+                            joystick.SetBtn(true, device, dictionary[com]);
+                            Thread.Sleep(200);
+                            for (uint i = 0; i < buttons.Length; i++)
+                                joystick.SetBtn(false, device, i);
+                        }
+                        ctimes = "";
+                        repeat = 1;
                         return match.Groups["name"].Value + ": " + com;
                     }
                 }
@@ -123,12 +187,13 @@ namespace WindowsFormsApplication1
 
         public void close() 
         {
-            twitchsock.Close();
+            if(twitchsock != null)
+                twitchsock.Close();
         }
+
         private void initJoystick()
         {
             joystick = new vJoy();
-            iReport = new vJoy.JoystickState();
             Console.WriteLine("Detecting Joystick ...");
             if (device <= 0 || device > 16)
             {

@@ -28,31 +28,38 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using System.Threading;
 
 namespace WindowsFormsApplication1
 {
     public partial class Form1 : Form
     {
         private TwitchClient twitchclient;
-        private Timer timer;
+        private System.Threading.Timer timer;
+        private System.Threading.TimerCallback timerCallback; 
+        private bool connected;
         public Form1()
         {
             InitializeComponent();
-            timer = new Timer();
-            timer.Tick += new EventHandler(timer_tick);
-            timer.Interval = 100;
-
+            timerCallback = new TimerCallback(timer_tick);
+            timer = null;
+            connected = false;
         }
 
         private void btnConnect_Click(object sender, EventArgs e)
         {
-            
-            if (twitchclient.connect(txtServer.Text, int.Parse(txtPort.Text), txtChannel.Text, txtUser.Text, txtPass.Text))
+            if (connected) 
             {
-                btnConnect.Text = "Connected!";
-                btnConnect.Enabled = false;
-                timer.Enabled = true;
-                timer.Start();
+                timer.Dispose();
+                twitchclient.disconnect();
+                connected = false;
+                btnConnect.Text = "Connect";
+            }
+            else if (twitchclient.connect(txtServer.Text, int.Parse(txtPort.Text), txtChannel.Text, txtUser.Text, txtPass.Text))
+            {
+                btnConnect.Text = "Disconnect";
+                connected = true;
+                timer = new System.Threading.Timer(timerCallback, null, 100, 100);
             }
         }
 
@@ -63,11 +70,13 @@ namespace WindowsFormsApplication1
 
         private void Form1_FormClosed(object sender, FormClosedEventArgs e)
         {
-            timer.Stop();
+            if(timer != null)
+                timer.Dispose();
+            twitchclient.disconnect();
             twitchclient.close();
         }
 
-        private void timer_tick(object sender, EventArgs args)
+        private void timer_tick(object sender)
         {
             twitchclient.readComment();
         }
